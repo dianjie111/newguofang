@@ -6,8 +6,12 @@
 
 body {
     font-family: Arial, sans-serif;
+<<<<<<< HEAD
     background-color: #0a1929;
     color: white;
+=======
+    background-color: #f0f0f0;
+>>>>>>> a984b3ffef5d39d522edd669b258cbb1035b5a49
     overflow: hidden;
 }
 
@@ -19,6 +23,7 @@ body {
 #canvas-container {
     flex: 1;
     position: relative;
+<<<<<<< HEAD
     background: linear-gradient(to bottom, #1e3a5f, #0a1929);
 }
 
@@ -37,12 +42,36 @@ body {
     font-size: 1.6rem;
     color: #00aaff;
     text-shadow: 0 0 10px rgba(0, 170, 255, 0.5);
+=======
+    background-color: #87CEEB;
+}
+
+#control-panel {
+    width: 300px;
+    background-color: #333;
+    color: white;
+    padding: 20px;
+    overflow-y: auto;
+    box-shadow: -2px 0 5px rgba(0, 0, 0, 0.3);
+}
+
+#control-panel h2 {
+    margin-bottom: 20px;
+    text-align: center;
+    font-size: 1.5rem;
+    color: #4CAF50;
+>>>>>>> a984b3ffef5d39d522edd669b258cbb1035b5a49
 }
 
 .control-group {
     margin-bottom: 25px;
+<<<<<<< HEAD
     border-bottom: 1px solid #2d3d4d;
     padding-bottom: 20px;
+=======
+    border-bottom: 1px solid #444;
+    padding-bottom: 15px;
+>>>>>>> a984b3ffef5d39d522edd669b258cbb1035b5a49
 }
 
 .control-group:last-child {
@@ -51,17 +80,24 @@ body {
 
 .control-group label {
     display: block;
+<<<<<<< HEAD
     margin-bottom: 12px;
     font-weight: bold;
     color: #b0c4de;
     text-transform: uppercase;
     font-size: 12px;
     letter-spacing: 1px;
+=======
+    margin-bottom: 10px;
+    font-weight: bold;
+    color: #ccc;
+>>>>>>> a984b3ffef5d39d522edd669b258cbb1035b5a49
 }
 
 .control-group button {
     width: 100%;
     padding: 12px;
+<<<<<<< HEAD
     margin-top: 8px;
     background-color: #0f2438;
     color: white;
@@ -80,11 +116,31 @@ body {
     color: #0a1929;
     transform: translateY(-2px);
     box-shadow: 0 4px 8px rgba(0, 170, 255, 0.3);
+=======
+    margin-top: 10px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.3s ease;
+}
+
+.control-group button:hover {
+    background-color: #45a049;
+    transform: translateY(-2px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+>>>>>>> a984b3ffef5d39d522edd669b258cbb1035b5a49
 }
 
 .control-group button:active {
     transform: translateY(0);
+<<<<<<< HEAD
     box-shadow: 0 2px 4px rgba(0, 170, 255, 0.2);
+=======
+    box-shadow: none;
+>>>>>>> a984b3ffef5d39d522edd669b258cbb1035b5a49
 }
 
 @media (max-width: 768px) {
@@ -94,6 +150,7 @@ body {
     
     #control-panel {
         width: 100%;
+<<<<<<< HEAD
         height: 35vh;
         overflow-y: auto;
         border-left: none;
@@ -102,5 +159,13 @@ body {
     
     #canvas-container {
         height: 65vh;
+=======
+        height: 30vh;
+        overflow-y: auto;
+    }
+    
+    #canvas-container {
+        height: 70vh;
+>>>>>>> a984b3ffef5d39d522edd669b258cbb1035b5a49
     }
 }
