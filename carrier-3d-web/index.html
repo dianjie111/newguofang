@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D航母展示</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div id="container">
+        <div id="canvas-container"></div>
+        <div id="control-panel">
+            <h2>航母控制</h2>
+            <div class="control-group">
+                <label>灯光状态</label>
+                <button onclick="changeLight('green')">正常状态</button>
+                <button onclick="changeLight('yellow')">警戒状态</button>
+                <button onclick="changeLight('red')">战斗状态</button>
+            </div>
+            <div class="control-group">
+                <label>舰载机状态</label>
+                <button onclick="toggleAircraft('show')">显示舰载机</button>
+                <button onclick="toggleAircraft('hide')">隐藏舰载机</button>
+                <button onclick="launchAircraft()">起飞舰载机</button>
+            </div>
+            <div class="control-group">
+                <label>雷达状态</label>
+                <button onclick="toggleRadar('start')">启动雷达</button>
+                <button onclick="toggleRadar('stop')">停止雷达</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>
