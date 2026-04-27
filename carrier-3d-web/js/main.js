@@ -1,22 +1,16 @@
 // 全局变量
 let scene, camera, renderer, controls;
-<<<<<<< HEAD
 let carrier, aircraft, radar, missile, ciws, sonar;
 let radarRotating = false;
 let ciwsActive = false;
 let sonarActive = false;
 let ecmActive = false;
 let missiles = [];
-=======
-let carrier, aircraft, radar;
-let radarRotating = false;
->>>>>>> a984b3ffef5d39d522edd669b258cbb1035b5a49
 
 // 初始化函数
 function init() {
     // 创建场景
     scene = new THREE.Scene();
-<<<<<<< HEAD
     scene.background = new THREE.Color(0x1e3a5f);
     
     // 创建相机
@@ -26,17 +20,6 @@ function init() {
     // 创建渲染器
     renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(window.innerWidth - 320, window.innerHeight);
-=======
-    scene.background = new THREE.Color(0x87CEEB);
-    
-    // 创建相机
-    camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-    camera.position.set(0, 5, 10);
-    
-    // 创建渲染器
-    renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setSize(window.innerWidth - 300, window.innerHeight);
->>>>>>> a984b3ffef5d39d522edd669b258cbb1035b5a49
     document.getElementById('canvas-container').appendChild(renderer.domElement);
     
     // 添加轨道控制
@@ -49,7 +32,6 @@ function init() {
     scene.add(ambientLight);
     
     const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-<<<<<<< HEAD
     directionalLight.position.set(5, 15, 10);
     scene.add(directionalLight);
     
@@ -62,48 +44,6 @@ function init() {
     
     // 添加水面效果
     createWater();
-=======
-    directionalLight.position.set(5, 10, 5);
-    scene.add(directionalLight);
-    
-    // 加载航母模型
-    const loader = new THREE.GLTFLoader();
-    loader.load(
-        'model/carrier.glb',
-        function (gltf) {
-            carrier = gltf.scene;
-            scene.add(carrier);
-            
-            // 调整模型位置和缩放
-            carrier.position.set(0, 0, 0);
-            carrier.scale.set(0.5, 0.5, 0.5);
-            
-            // 查找舰载机和雷达
-            carrier.traverse(function (child) {
-                if (child.name === 'aircraft') {
-                    aircraft = child;
-                }
-                if (child.name === 'radar') {
-                    radar = child;
-                }
-            });
-        },
-        function (xhr) {
-            console.log((xhr.loaded / xhr.total * 100) + '% loaded');
-        },
-        function (error) {
-            console.error('An error happened', error);
-        }
-    );
-    
-    // 添加地面
-    const groundGeometry = new THREE.PlaneGeometry(100, 100);
-    const groundMaterial = new THREE.MeshPhongMaterial({ color: 0x4169E1, side: THREE.DoubleSide });
-    const ground = new THREE.Mesh(groundGeometry, groundMaterial);
-    ground.rotation.x = -Math.PI / 2;
-    ground.position.y = -1;
-    scene.add(ground);
->>>>>>> a984b3ffef5d39d522edd669b258cbb1035b5a49
     
     // 响应窗口大小变化
     window.addEventListener('resize', onWindowResize, false);
@@ -177,17 +117,67 @@ function createCarrier() {
 
 // 创建水面效果
 function createWater() {
-    const waterGeometry = new THREE.PlaneGeometry(100, 100);
+    // 创建水面几何体
+    const waterGeometry = new THREE.PlaneGeometry(100, 100, 100, 100);
+    
+    // 创建水面材质
     const waterMaterial = new THREE.MeshPhongMaterial({ 
         color: 0x4169E1, 
         transparent: true, 
         opacity: 0.7, 
-        side: THREE.DoubleSide 
+        side: THREE.DoubleSide,
+        shininess: 100,
+        specular: 0x111111
     });
+    
+    // 创建水面网格
     const water = new THREE.Mesh(waterGeometry, waterMaterial);
     water.rotation.x = -Math.PI / 2;
     water.position.y = -0.3;
     scene.add(water);
+    
+    // 存储水面顶点位置用于动画
+    water.geometry.vertices = [];
+    for (let i = 0; i < water.geometry.attributes.position.count; i++) {
+        const x = water.geometry.attributes.position.getX(i);
+        const y = water.geometry.attributes.position.getY(i);
+        const z = water.geometry.attributes.position.getZ(i);
+        water.geometry.vertices.push({ x, y, z, originalY: y });
+    }
+    
+    // 存储水面对象以便动画更新
+    window.water = water;
+}
+
+// 更新水面动画
+function updateWater() {
+    if (!window.water) return;
+    
+    const time = Date.now() * 0.001;
+    const water = window.water;
+    
+    // 更新水面顶点位置
+    for (let i = 0; i < water.geometry.vertices.length; i++) {
+        const vertex = water.geometry.vertices[i];
+        const waveHeight = 0.1;
+        const waveFrequency = 0.05;
+        const waveSpeed = 0.5;
+        
+        // 计算波浪高度
+        const wave1 = Math.sin(vertex.x * waveFrequency + time * waveSpeed) * waveHeight;
+        const wave2 = Math.sin(vertex.z * waveFrequency + time * waveSpeed * 0.7) * waveHeight * 0.7;
+        const wave3 = Math.sin((vertex.x + vertex.z) * waveFrequency * 0.5 + time * waveSpeed * 1.2) * waveHeight * 0.5;
+        
+        // 更新顶点位置
+        vertex.y = vertex.originalY + wave1 + wave2 + wave3;
+        
+        // 更新几何体属性
+        water.geometry.attributes.position.setY(i, vertex.y);
+    }
+    
+    // 标记几何体需要更新
+    water.geometry.attributes.position.needsUpdate = true;
+    water.geometry.computeVertexNormals();
 }
 
 // 窗口大小变化处理
@@ -213,7 +203,6 @@ function animate() {
         radar.rotation.y += 0.05;
     }
     
-<<<<<<< HEAD
     // 近防系统旋转
     if (ciwsActive && ciws) {
         ciws.rotation.y += 0.1;
@@ -228,13 +217,13 @@ function animate() {
     // 导弹飞行
     updateMissiles();
     
-=======
->>>>>>> a984b3ffef5d39d522edd669b258cbb1035b5a49
+    // 更新水面动画
+    updateWater();
+    
     controls.update();
     renderer.render(scene, camera);
 }
 
-<<<<<<< HEAD
 // 更新导弹位置
 function updateMissiles() {
     for (let i = missiles.length - 1; i >= 0; i--) {
@@ -269,7 +258,11 @@ function changeStatus(status) {
                 if (child === radar) {
                     child.material.color.set(0xff0000);
                 }
-=======
+            }
+        }
+    });
+}
+
 // 改变灯光状态
 function changeLight(status) {
     if (!carrier) return;
@@ -282,7 +275,6 @@ function changeLight(status) {
                 child.material.color.set(0xffff00);
             } else if (status === 'red') {
                 child.material.color.set(0xff0000);
->>>>>>> a984b3ffef5d39d522edd669b258cbb1035b5a49
             }
         }
     });
@@ -314,18 +306,13 @@ function launchAircraft() {
             clearInterval(interval);
             // 重置位置
             setTimeout(() => {
-<<<<<<< HEAD
                 aircraft.position.y = 0.4;
-=======
-                aircraft.position.y = 0;
->>>>>>> a984b3ffef5d39d522edd669b258cbb1035b5a49
                 aircraft.position.z = 0;
             }, 2000);
         }
     }, 50);
 }
 
-<<<<<<< HEAD
 // 回收舰载机
 function recoverAircraft() {
     if (!aircraft) return;
@@ -413,13 +400,10 @@ function activateECM() {
     }
 }
 
-=======
->>>>>>> a984b3ffef5d39d522edd669b258cbb1035b5a49
 // 切换雷达状态
 function toggleRadar(action) {
     if (action === 'start') {
         radarRotating = true;
-<<<<<<< HEAD
         if (radar) {
             radar.material.color.set(0x00aaff);
         }
@@ -469,13 +453,5 @@ function formFormation(type) {
         }
     }, 50);
 }
-
-=======
-    } else if (action === 'stop') {
-        radarRotating = false;
-    }
-}
-
->>>>>>> a984b3ffef5d39d522edd669b258cbb1035b5a49
 // 初始化
 window.onload = init;
