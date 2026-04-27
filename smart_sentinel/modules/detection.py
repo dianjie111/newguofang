@@ -7,6 +7,7 @@
 
 import cv2
 import numpy as np
+import os
 
 
 class ObjectDetector:
@@ -14,11 +15,24 @@ class ObjectDetector:
     
     def __init__(self):
         """初始化检测器"""
+        # 获取当前文件所在目录的绝对路径
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        # 构建模型文件的绝对路径
+        model_dir = os.path.join(current_dir, '..', 'models')
+        prototxt_path = os.path.join(model_dir, 'MobileNetSSD_deploy.prototxt')
+        caffemodel_path = os.path.join(model_dir, 'MobileNetSSD_deploy.caffemodel')
+        
         # 加载预训练模型
-        self.net = cv2.dnn.readNetFromCaffe(
-            'models/MobileNetSSD_deploy.prototxt',
-            'models/MobileNetSSD_deploy.caffemodel'
-        )
+        try:
+            self.net = cv2.dnn.readNetFromCaffe(
+                prototxt_path,
+                caffemodel_path
+            )
+        except cv2.error as e:
+            print(f"错误: 无法加载模型文件。请确保模型文件存在于 {model_dir} 目录中。")
+            print(f"错误详情: {e}")
+            print("请按照 models/README.md 中的说明下载模型文件。")
+            raise
         
         # 类别标签
         self.classes = [
