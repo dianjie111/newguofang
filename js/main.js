@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
+import { Sky } from 'three/addons/objects/Sky.js';
 
 let scene, camera, renderer, controls;
 let carrier;
@@ -10,12 +11,13 @@ let foamParticles, foamParticleSystem;
 let carrierInitialY = 0;
 let ripples = [];
 let rippleId = 0;
+let sun, sky;
 
 function init() {
     scene = new THREE.Scene();
-    const skyColor = new THREE.Color(0x87CEEB);
+    const skyColor = new THREE.Color(0x0077be);
     scene.background = skyColor;
-    scene.fog = new THREE.Fog(skyColor, 100, 300);
+    scene.fog = new THREE.Fog(skyColor, 80, 350);
     
     camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
     camera.position.set(0, 25, 50);
@@ -52,13 +54,15 @@ function init() {
     directionalLight2.position.set(-20, 30, -20);
     scene.add(directionalLight2);
     
-    const hemisphereLight = new THREE.HemisphereLight(0x87CEEB, 0x444444, 0.3);
+    const hemisphereLight = new THREE.HemisphereLight(0x87CEEB, 0x202040, 0.4);
     scene.add(hemisphereLight);
     
+    createSky();
     createWater();
     createCarrier();
     createSplashParticles();
     createFoamParticles();
+    createSeaSpray();
     
     window.addEventListener('resize', onWindowResize, false);
     animate();
@@ -147,16 +151,53 @@ function createPlaceholderCarrier() {
     carrier.add(island);
 }
 
+function createSky() {
+    sky = new Sky();
+    sky.scale.setScalar(450000);
+    scene.add(sky);
+    
+    const skyUniforms = sky.material.uniforms;
+    
+    skyUniforms['turbidity'].value = 10;
+    skyUniforms['rayleigh'].value = 2;
+    skyUniforms['mieCoefficient'].value = 0.01;
+    skyUniforms['mieDirectionalG'].value = 0.8;
+    
+    sun = new THREE.Vector3();
+    const phi = THREE.MathUtils.degToRad(45);
+    const theta = THREE.MathUtils.degToRad(135);
+    
+    sun.setFromSphericalCoords(1, phi, theta);
+    sky.material.uniforms['sunPosition'].value.copy(sun);
+    
+    const ambientGradient = new THREE.CubeTextureLoader()
+    scene.background = sky.material;
+    
+    const sunLight = new THREE.DirectionalLight(0xffffff, 1.5);
+    sunLight.position.copy(sun).normalize().multiplyScalar(50);
+    sunLight.castShadow = true;
+    sunLight.shadow.mapSize.width = 2048;
+    sunLight.shadow.mapSize.height = 2048;
+    sunLight.shadow.camera.near = 0.5;
+    sunLight.shadow.camera.far = 400;
+    sunLight.shadow.camera.left = -100;
+    sunLight.shadow.camera.right = 100;
+    sunLight.shadow.camera.top = 100;
+    sunLight.shadow.camera.bottom = -100;
+    scene.add(sunLight);
+}
+
 function createWater() {
-    const waterGeometry = new THREE.PlaneGeometry(200, 200, 100, 100);
+    const waterGeometry = new THREE.PlaneGeometry(200, 200, 120, 120);
     
     const waterMaterial = new THREE.MeshPhongMaterial({ 
-        color: 0x1e90ff, 
+        color: 0x0a4a6e, 
         transparent: true, 
-        opacity: 0.85, 
+        opacity: 0.9, 
         side: THREE.DoubleSide,
-        shininess: 150,
-        specular: 0xaaaaaa
+        shininess: 200,
+        specular: 0x4488aa,
+        reflectivity: 0.8
     });
     
     water = new THREE.Mesh(waterGeometry, waterMaterial);
@@ -173,6 +214,43 @@ function createWater() {
         const z = water.geometry.attributes.position.getZ(i);
         waterVertices.push({ x, y, z, originalY: y });
     }
+}
+
+let seaSprayParticles, seaSprayParticleSystem;
+
+function createSeaSpray() {
+    const sprayCount = 800;
+    const sprayGeometry = new THREE.BufferGeometry();
+    const sprayPositions = new Float32Array(sprayCount * 3);
+    const sprayVelocities = new Float32Array(sprayCount * 3);
+    const sprayLifetimes = new Float32Array(sprayCount);
+    
+    for (let i = 0; i < sprayCount; i++) {
+        sprayPositions[i * 3] = (Math.random() - 0.5) * 180;
+        sprayPositions[i * 3 + 1] = -100;
+        sprayPositions[i * 3 + 2] = (Math.random() - 0.5) * 180;
+        sprayVelocities[i * 3] = (Math.random() - 0.5) * 3;
+        sprayVelocities[i * 3 + 1] = Math.random() * 2 + 0.5;
+        sprayVelocities[i * 3 + 2] = (Math.random() - 0.5) * 3;
+        sprayLifetimes[i] = 0;
+    }
+    
+    sprayGeometry.setAttribute('position', new THREE.BufferAttribute(sprayPositions, 3));
+    sprayGeometry.setAttribute('velocity', new THREE.BufferAttribute(sprayVelocities, 3));
+    sprayGeometry.setAttribute('lifetime', new THREE.BufferAttribute(sprayLifetimes, 1));
+    
+    const sprayMaterial = new THREE.PointsMaterial({
+        color: 0xc0e0f0,
+        size: 0.08,
+        transparent: true,
+        opacity: 0.7,
+        sizeAttenuation: true,
+        blending: THREE.AdditiveBlending
+    });
+    
+    seaSprayParticleSystem = new THREE.Points(sprayGeometry, sprayMaterial);
+    scene.add(seaSprayParticleSystem);
+    seaSprayParticles = { count: sprayCount, velocities: sprayVelocities, lifetimes: sprayLifetimes };
 }
 
 function createSplashParticles() {
@@ -245,17 +323,26 @@ function updateWater() {
         
         let waveY = 0;
         
-        waveY += Math.sin(vertex.x * 0.02 + time * 0.4) * 0.5;
-        waveY += Math.sin(vertex.z * 0.02 + time * 0.3) * 0.4;
-        waveY += Math.sin(vertex.x * 0.015 + time * 0.5) * 0.3;
-        waveY += Math.sin(vertex.z * 0.015 + time * 0.35) * 0.25;
-        waveY += Math.sin((vertex.x + vertex.z) * 0.01 + time * 0.6) * 0.2;
-        waveY += Math.sin((vertex.x - vertex.z) * 0.008 + time * 0.45) * 0.15;
-        waveY += Math.sin(vertex.x * 0.03 + time * 0.7) * 0.1;
-        waveY += Math.sin(vertex.z * 0.03 + time * 0.55) * 0.08;
+        waveY += Math.sin(vertex.x * 0.02 + time * 0.4) * 0.6;
+        waveY += Math.sin(vertex.z * 0.02 + time * 0.3) * 0.5;
+        waveY += Math.sin(vertex.x * 0.015 + time * 0.5) * 0.4;
+        waveY += Math.sin(vertex.z * 0.015 + time * 0.35) * 0.35;
+        waveY += Math.sin((vertex.x + vertex.z) * 0.01 + time * 0.6) * 0.25;
+        waveY += Math.sin((vertex.x - vertex.z) * 0.008 + time * 0.45) * 0.2;
+        waveY += Math.sin(vertex.x * 0.03 + time * 0.7) * 0.15;
+        waveY += Math.sin(vertex.z * 0.03 + time * 0.55) * 0.12;
+        waveY += Math.sin(vertex.x * 0.005 + time * 0.2) * 0.8;
+        waveY += Math.sin(vertex.z * 0.005 + time * 0.15) * 0.6;
         
-        const localRandom = Math.sin(vertex.x * 0.1 + vertex.z * 0.1 + time) * 0.05;
+        const localRandom = Math.sin(vertex.x * 0.1 + vertex.z * 0.1 + time * 2) * 0.08;
         waveY += localRandom;
+        
+        const distanceFromCenter = Math.sqrt(vertex.x * vertex.x + vertex.z * vertex.z);
+        if (distanceFromCenter > 50) {
+            const edgeFactor = (distanceFromCenter - 50) / 50;
+            waveY += Math.sin(vertex.x * 0.01 + time) * 0.3 * edgeFactor;
+            waveY += Math.sin(vertex.z * 0.01 + time * 0.8) * 0.25 * edgeFactor;
+        }
         
         for (const ripple of ripples) {
             const dx = vertex.x - ripple.x;
@@ -276,11 +363,11 @@ function updateWater() {
     water.geometry.attributes.position.needsUpdate = true;
     water.geometry.computeVertexNormals();
     
-    const opacity = 0.8 + Math.sin(time * 0.5) * 0.1;
+    const opacity = 0.85 + Math.sin(time * 0.3) * 0.08;
     water.material.opacity = opacity;
     
-    const hueShift = Math.sin(time * 0.2) * 0.02;
-    water.material.color.setHSL(0.57 + hueShift, 0.8, 0.55);
+    const hueShift = Math.sin(time * 0.15) * 0.03;
+    water.material.color.setHSL(0.55 + hueShift, 0.75, 0.45);
 }
 
 function createRipple(x, z) {
@@ -377,9 +464,9 @@ function updateFoamParticles() {
     const positions = foamParticleSystem.geometry.attributes.position.array;
     
     for (let i = 0; i < foamParticles.count; i++) {
-        positions[i * 3] += Math.sin(time + i * 0.1) * 0.02;
-        positions[i * 3 + 1] = -1.3 + Math.sin(time * 2 + i * 0.05) * 0.1;
-        positions[i * 3 + 2] += Math.cos(time + i * 0.15) * 0.02;
+        positions[i * 3] += Math.sin(time + i * 0.1) * 0.03;
+        positions[i * 3 + 1] = -1.3 + Math.sin(time * 2 + i * 0.05) * 0.12;
+        positions[i * 3 + 2] += Math.cos(time + i * 0.15) * 0.03;
         
         if (positions[i * 3] > 90) positions[i * 3] = -90;
         if (positions[i * 3] < -90) positions[i * 3] = 90;
@@ -388,6 +475,45 @@ function updateFoamParticles() {
     }
     
     foamParticleSystem.geometry.attributes.position.needsUpdate = true;
+}
+
+function updateSeaSpray() {
+    if (!seaSprayParticleSystem) return;
+    
+    const time = Date.now() * 0.001;
+    const positions = seaSprayParticleSystem.geometry.attributes.position.array;
+    const velocities = seaSprayParticles.velocities;
+    const lifetimes = seaSprayParticles.lifetimes;
+    
+    for (let i = 0; i < seaSprayParticles.count; i++) {
+        if (lifetimes[i] <= 0) {
+            if (Math.random() < 0.008) {
+                const angle = Math.random() * Math.PI * 2;
+                const dist = 50 + Math.random() * 40;
+                positions[i * 3] = Math.cos(angle) * dist;
+                positions[i * 3 + 1] = -1.4;
+                positions[i * 3 + 2] = Math.sin(angle) * dist;
+                velocities[i * 3] = (Math.random() - 0.5) * 4;
+                velocities[i * 3 + 1] = Math.random() * 3 + 1;
+                velocities[i * 3 + 2] = (Math.random() - 0.5) * 4;
+                lifetimes[i] = Math.random() * 2 + 1;
+            }
+        } else {
+            positions[i * 3] += velocities[i * 3] * 0.05;
+            positions[i * 3 + 1] += velocities[i * 3 + 1] * 0.05;
+            positions[i * 3 + 2] += velocities[i * 3 + 2] * 0.05;
+            velocities[i * 3 + 1] -= 0.15;
+            velocities[i * 3] *= 0.99;
+            velocities[i * 3 + 2] *= 0.99;
+            lifetimes[i] -= 0.016;
+            
+            if (lifetimes[i] < 0) {
+                positions[i * 3 + 1] = -100;
+            }
+        }
+    }
+    
+    seaSprayParticleSystem.geometry.attributes.position.needsUpdate = true;
 }
 
 function onWindowResize() {
@@ -405,6 +531,7 @@ function animate() {
     updateCarrierWaves();
     updateSplashParticles();
     updateFoamParticles();
+    updateSeaSpray();
     
     controls.update();
     renderer.render(scene, camera);
