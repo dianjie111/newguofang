@@ -1,0 +1,15 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    overflow: hidden;
+}
+
+#canvas-container {
+    width: 100vw;
+    height: 100vh;
+    background: linear-gradient(to bottom, #1e3a5f, #0a1929);
+}

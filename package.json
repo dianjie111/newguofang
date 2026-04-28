@@ -1,0 +1,27 @@
+{
+  "name": "guofang",
+  "version": "1.0.0",
+  "description": "```\r carrier-3d-web/\r ├── index.html          # 主页面\r ├── css/\r │   └── style.css       # CSS样式文件\r ├── js/\r │   └── main.js         # JavaScript脚本文件\r └── model/\r     └── carrier.glb     # 航母模型文件（需要自行添加）\r ```",
+  "main": "index.js",
+  "directories": {
+    "lib": "lib"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dianjie111/newguofang.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/dianjie111/newguofang/issues"
+  },
+  "homepage": "https://github.com/dianjie111/newguofang#readme",
+  "dependencies": {
+    "three": "^0.184.0"
+  }
+}
