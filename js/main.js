@@ -12,6 +12,7 @@ let carrierInitialY = 0;
 let ripples = [];
 let rippleId = 0;
 let sun, sky;
+let waveMeshes = [];
 
 function init() {
     scene = new THREE.Scene();
@@ -57,8 +58,9 @@ function init() {
     const hemisphereLight = new THREE.HemisphereLight(0x87CEEB, 0x202040, 0.4);
     scene.add(hemisphereLight);
     
-    createSky();
+   createSky();
     createWater();
+    createWaveMeshes();
     createCarrier();
     createSplashParticles();
     createFoamParticles();
@@ -251,6 +253,46 @@ function createSeaSpray() {
     seaSprayParticleSystem = new THREE.Points(sprayGeometry, sprayMaterial);
     scene.add(seaSprayParticleSystem);
     seaSprayParticles = { count: sprayCount, velocities: sprayVelocities, lifetimes: sprayLifetimes };
+}
+
+function createWaveMeshes() {
+    const waveCount = 8;
+    
+    for (let i = 0; i < waveCount; i++) {
+        const waveGeometry = new THREE.PlaneGeometry(120, 8, 120, 5);
+        
+        const waveMaterial = new THREE.MeshPhongMaterial({
+            color: new THREE.Color().setHSL(0.55 + Math.random() * 0.1, 0.7, 0.4 + Math.random() * 0.2),
+            transparent: true,
+            opacity: 0.6 + Math.random() * 0.3,
+            side: THREE.DoubleSide,
+            shininess: 150,
+            specular: 0x66aadd,
+            blending: THREE.AdditiveBlending
+        });
+        
+        const waveMesh = new THREE.Mesh(waveGeometry, waveMaterial);
+        waveMesh.rotation.x = -Math.PI / 2 + 0.1;
+        
+        const angle = (i / waveCount) * Math.PI * 2;
+        const radius = 55 + Math.random() * 20;
+        waveMesh.position.x = Math.cos(angle) * radius;
+        waveMesh.position.z = Math.sin(angle) * radius;
+        waveMesh.position.y = -1.2;
+        
+        waveMesh.userData = {
+            baseAngle: angle,
+            radius: radius,
+            speed: 0.003 + Math.random() * 0.002,
+            amplitude: 0.3 + Math.random() * 0.3,
+            frequency: 0.02 + Math.random() * 0.01,
+            phase: Math.random() * Math.PI * 2,
+            offsetY: Math.random() * 0.5
+        };
+        
+        scene.add(waveMesh);
+        waveMeshes.push(waveMesh);
+    }
 }
 
 function createSplashParticles() {
@@ -516,6 +558,36 @@ function updateSeaSpray() {
     seaSprayParticleSystem.geometry.attributes.position.needsUpdate = true;
 }
 
+function updateWaveMeshes() {
+    const time = Date.now() * 0.001;
+    
+    for (const waveMesh of waveMeshes) {
+        const userData = waveMesh.userData;
+        
+        userData.baseAngle += userData.speed;
+        waveMesh.position.x = Math.cos(userData.baseAngle) * userData.radius;
+        waveMesh.position.z = Math.sin(userData.baseAngle) * userData.radius;
+        waveMesh.position.y = -1.2 + userData.offsetY + Math.sin(time * 2) * 0.2;
+        
+        const positions = waveMesh.geometry.attributes.position.array;
+        const vertexCount = positions.length / 3;
+        
+        for (let i = 0; i < vertexCount; i++) {
+            const x = waveMesh.geometry.attributes.position.getX(i);
+            const z = waveMesh.geometry.attributes.position.getZ(i);
+            
+            let waveY = Math.sin(x * userData.frequency + time * 2 + userData.phase) * userData.amplitude;
+            waveY += Math.sin(x * userData.frequency * 2 + time * 3 + userData.phase) * userData.amplitude * 0.5;
+            waveY += Math.sin(x * userData.frequency * 0.5 + time + userData.phase) * userData.amplitude * 0.3;
+            
+            positions[i * 3 + 1] = waveY;
+        }
+        
+        waveMesh.geometry.attributes.position.needsUpdate = true;
+        waveMesh.geometry.computeVertexNormals();
+    }
+}
+
 function onWindowResize() {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
@@ -527,6 +599,7 @@ function animate() {
     requestAnimationFrame(animate);
     
     updateWater();
+    updateWaveMeshes();
     updateRipples();
     updateCarrierWaves();
     updateSplashParticles();
